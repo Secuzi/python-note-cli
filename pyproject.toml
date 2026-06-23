@@ -1,0 +1,20 @@
+[project]
+name = "my-awesome-project"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "argparse>=1.4.0",
+    "mistralai>=2.4.13",
+    "numpy>=2.5.0",
+    "pandas>=3.0.3",
+    "pydantic>=2.13.4",
+    "python-dotenv>=1.2.2",
+    "requests>=2.34.2",
+]
+
+[dependency-groups]
+dev = [
+    "ipykernel>=7.3.0",
+]
