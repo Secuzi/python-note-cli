@@ -23,17 +23,3 @@ class EntryCreate(BaseModel):
     summary: str
     tags: list[str]
     action_item: str
-
-
-def imagine():
-    tuples = [("asd", "skribnit"), ("skid", "powerpoint")]
-
-    for name in tuples:
-        print(name[0])
-
-    sets = {name[1] for tupe in tuples}
-
-    print(sets)
-
-
-imagine()

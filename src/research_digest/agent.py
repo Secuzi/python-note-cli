@@ -32,16 +32,3 @@ def summarize(text):
         print(f"RESS: {res}")
         entry = res.choices[0].message.parsed
         return entry
-        # Handle response
-        # 1. Go into the first item of the 'choices' list
-        # choice = res.choices[0]
-
-        # 2. Access the 'message' object
-        # message = choice.message
-
-        # 3. Access the 'content' list.
-        # Index 0 is the ThinkChunk, Index 1 is the TextChunk we want.
-        # text_chunk = message.content[1]
-
-        # 4. Extract the actual text string
-        # return text_chunk.text

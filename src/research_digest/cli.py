@@ -1,7 +1,6 @@
 import argparse
 from agent import summarize
 from db import init_db, add_entry, get_list
-import pandas as pd
 from pandas import DataFrame
 
 
