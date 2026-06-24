@@ -1,12 +1,12 @@
 from pydantic import BaseModel
-from datetime import date
+from datetime import datetime
 
 
 class Entry(BaseModel):
     entry_id: str
     summary: str
     action_item: str
-    created_at: date
+    created_at: datetime
 
 
 class Tag(BaseModel):
@@ -23,3 +23,17 @@ class EntryCreate(BaseModel):
     summary: str
     tags: list[str]
     action_item: str
+
+
+def imagine():
+    tuples = [("asd", "skribnit"), ("skid", "powerpoint")]
+
+    for name in tuples:
+        print(name[0])
+
+    sets = {name[1] for tupe in tuples}
+
+    print(sets)
+
+
+imagine()

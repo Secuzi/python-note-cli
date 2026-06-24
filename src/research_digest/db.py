@@ -2,6 +2,7 @@ import sqlite3
 import os
 import uuid
 from datetime import datetime
+from model import Entry
 
 
 def init_db():
@@ -38,40 +39,64 @@ def init_db():
 
 
 def create_tuple(tag):
-    return (uuid.uuid4(), tag)
+    return (str(uuid.uuid4()), tag)
 
 
 def add_entry(entry):
-    # 1. Prepare the query
-    placeholders = ", ".join(["?"] * len(entry.tags))
-    query = f"SELECT tag_id, name FROM tag WHERE name IN ({placeholders})"
+    # 1. Handle empty tags gracefully so the SQL 'IN' clause doesn't crash
+    if not entry.tags:
+        print("Warning: No tags provided.")
+        # Depending on your app, you might want to return early here,
+        # or just skip the tag logic and only insert the entry.
+
+    entry_id = str(uuid.uuid4())
+    date_now = datetime.now().isoformat()
 
     with sqlite3.connect("awesome-cli.db") as conn:
         cursor = conn.cursor()
-        cursor.execute(query, entry.tags)
 
-        # 2. Extract the NAMES of the tags that already exist (row[1])
-        found_tag_names = [row[1] for row in cursor.fetchall()]
+        found_tags = []
+        if entry.tags:
+            placeholders = ", ".join(["?"] * len(entry.tags))
+            query = f"SELECT tag_id, name FROM tag WHERE name IN ({placeholders})"
+            cursor.execute(query, entry.tags)
 
-        # 3. Filter down to ONLY the tags that are missing from the database
-        missing_tag_names = [name for name in entry.tags if name not in found_tag_names]
+            found_tags = cursor.fetchall()
 
-        # 4. If there are any missing tags, insert them
-        if missing_tag_names:
-            # Map the create_tuple function ONLY over the missing tags
-            new_tags = list(map(create_tuple, missing_tag_names))
+            found_names = {row[1] for row in found_tags}
+            missing_names = [name for name in entry.tags if name not in found_names]
 
-            cursor.executemany("INSERT INTO tag (tag_id, name) VALUES (?, ?)", new_tags)
+            new_tags = []
+            if missing_names:
+                new_tags = [create_tuple(name) for name in missing_names]
+                cursor.executemany(
+                    "INSERT INTO tag (tag_id, name) VALUES (?, ?)", new_tags
+                )
 
-        date_now = datetime.now()
-        entry_list = [
-            uuid.uuid4(),
-            entry.summary,
-            entry.action_item,
-            date_now.isoformat(),
-        ]
-
+        entry_list = (entry_id, entry.summary, entry.action_item, date_now)
         cursor.execute(
             "INSERT INTO entry (entry_id, summary, action_item, created_at) VALUES (?, ?, ?, ?)",
             entry_list,
         )
+
+        if entry.tags:
+            all_tags = found_tags + new_tags
+            entry_tags_links = [(row[0], entry_id) for row in all_tags]
+
+            cursor.executemany(
+                "INSERT INTO entry_tag (tag_id, entry_id) VALUES (?, ?)",
+                entry_tags_links,
+            )
+
+
+def get_list(limit):
+
+    with sqlite3.connect("awesome-cli.db") as conn:
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT * FROM ENTRY LIMIT ?", (limit,))
+
+        entries = [Entry(**row) for row in cursor.fetchall()]
+
+        return entries

@@ -1,23 +1,24 @@
 import argparse
 from agent import summarize
-from model import EntryCreate
-from db import init_db, add_entry
+from db import init_db, add_entry, get_list
+import pandas as pd
+from pandas import DataFrame
 
 
 def add_command(text):
-    res = summarize(text)
-
-    entry = EntryCreate.model_validate_json(res)
+    entry = summarize(text)
     add_entry(entry)
-    # Check if there is existing tag from entry list
+    print("Success")
 
-    # If nothing is found then create tag in db (tag_id + name)
 
-    # Get id of tag then create entry_tag row
+def get_list_command(limit):
+    entries = get_list(limit)
 
-    # Create row in entry table
+    df = DataFrame([entry.model_dump() for entry in entries])
 
-    print(f"Output: {entry}")
+    df = df[["entry_id", "summary", "created_at"]]
+
+    print(df)
 
 
 def init_subparsers(parser):
@@ -36,13 +37,15 @@ def main():
     init_db()
 
     parser = argparse.ArgumentParser(description="Cool CLI for studying")
-
     init_subparsers(parser)
     args = parser.parse_args()
 
-    if args.command == "add":
-        print(args.text)
-        add_command(args.text)
+    match args.command:
+        case "add":
+            add_command(args.text)
+        case "list":
+            print(f"Limit: {args.limit}")
+            get_list_command(args.limit)
 
 
 main()
