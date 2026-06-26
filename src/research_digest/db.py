@@ -3,6 +3,7 @@ import os
 import uuid
 from datetime import datetime, date
 from src.research_digest.model import Entry
+from src.research_digest.error_models.db_error import EntryErrorException
 
 
 def adapt_datetime_iso(val: datetime):
@@ -121,11 +122,16 @@ def search_entry(entry_id, db_path="awesome-cli.db"):
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
 
-        row = cursor.execute(
-            "SELECT * FROM entry WHERE entry_id = ?", (entry_id,)
-        ).fetchone()
+        try:
+            row = cursor.execute(
+                "SELECT * FROM entry WHERE entry_id = ?", (entry_id,)
+            ).fetchone()
 
-        found_entry = Entry(**row)
+            found_entry = Entry(**row)
+            print(f"Row: {row}")
+        except TypeError:
+            raise EntryErrorException(
+                message=f"ID: {entry_id} does not exist", error_code="404"
+            )
 
-        print(f"Found Entry {found_entry}")
         return found_entry

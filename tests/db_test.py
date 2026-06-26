@@ -1,8 +1,22 @@
 import pytest
 from src.research_digest.db import add_entry, search_entry
-from src.research_digest.model import EntryCreate, Entry
+from src.research_digest.model import EntryCreate
 import sqlite3
 from datetime import datetime
+from src.research_digest.error_models.db_error import EntryErrorException
+
+
+def create_dummy_entry():
+    created_at = datetime.fromisoformat("2026-06-26 17:11:23")
+
+    entry = {
+        "entry_id": "123",
+        "summary": "Fixture allows you to setup configurations",
+        "action_item": "Create a small project with fixture",
+        "created_at": created_at,
+    }
+
+    return entry
 
 
 # Fixture Setup
@@ -67,38 +81,35 @@ def test_add_entry_with_no_tags(db_path):
 
 
 def test_show_entry(db_path):
-    conn = sqlite3.connect(db_path)
-    cursor = conn.cursor()
-    created_at = datetime.fromisoformat("2026-06-26 17:11:23")
+    with sqlite3.connect(db_path) as conn:
+        cursor = conn.cursor()
+        entry = create_dummy_entry()
 
-    # entry = (
-    #     "123",
-    #     "Fixture allows you to setup configurations",
-    #     "Create a small project with fixture",
-    #     created_at,
-    # )
+        entry_tuple = tuple(entry.values())
 
-    entry = {
-        "entry_id": "123",
-        "summary": "Fixture allows you to setup configurations",
-        "action_item": "Create a small project with fixture",
-        "created_at": created_at,
-    }
-    entry_tuple = tuple(entry.values())
+        cursor.execute(
+            "INSERT INTO entry (entry_id, summary, action_item, created_at) VALUES (?, ?, ?, ?)",
+            entry_tuple,
+        )
+        conn.commit()
 
-    cursor.execute(
-        "INSERT INTO entry (entry_id, summary, action_item, created_at) VALUES (?, ?, ?, ?)",
-        entry_tuple,
-    )
-    conn.commit()
+        found_entry = search_entry("123", db_path).model_dump()
 
-    found_entry = search_entry("123", db_path).model_dump()
+        assert found_entry == entry
 
-    assert found_entry == {
-        "entry_id": "123",
-        "summary": "Fixture allows you to setup configurations",
-        "action_item": "Create a small project with fixture",
-        "created_at": created_at,
-    }
 
-    conn.close()
+def test_show_entry_with_no_entry(db_path):
+    entry = create_dummy_entry()
+
+    with sqlite3.connect(db_path) as conn:
+        cursor = conn.cursor()
+        entry_tuple = tuple(entry.values())
+
+        cursor.execute(
+            "INSERT INTO entry (entry_id, summary, action_item, created_at) VALUES (?, ?, ?, ?)",
+            entry_tuple,
+        )
+        with pytest.raises(EntryErrorException) as error_info:
+            search_entry(entry_id="321", db_path=db_path)
+
+        assert "321 does not exist" in str(error_info.value)
