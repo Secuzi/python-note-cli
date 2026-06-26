@@ -1,6 +1,6 @@
 import argparse
-from agent import summarize
-from db import init_db, add_entry, get_list
+from src.research_digest.agent import summarize
+from src.research_digest.db import init_db, add_entry, get_list
 from pandas import DataFrame
 
 

@@ -1,8 +1,21 @@
 import sqlite3
 import os
 import uuid
-from datetime import datetime
-from model import Entry
+from datetime import datetime, date
+from src.research_digest.model import Entry
+
+
+def adapt_datetime_iso(val: datetime):
+    return val.isoformat()
+
+
+def adapt_date_iso(val: date):
+    return val.isoformat()
+
+
+# Tell sqlite3 to use these rules whenever it sees a datetime or date object
+sqlite3.register_adapter(datetime, adapt_datetime_iso)
+sqlite3.register_adapter(date, adapt_date_iso)
 
 
 def init_db():
@@ -42,7 +55,7 @@ def create_tuple(tag):
     return (str(uuid.uuid4()), tag)
 
 
-def add_entry(entry):
+def add_entry(entry, db_path="awesome-cli.db"):
     # 1. Handle empty tags gracefully so the SQL 'IN' clause doesn't crash
     if not entry.tags:
         print("Warning: No tags provided.")
@@ -52,7 +65,7 @@ def add_entry(entry):
     entry_id = str(uuid.uuid4())
     date_now = datetime.now().isoformat()
 
-    with sqlite3.connect("awesome-cli.db") as conn:
+    with sqlite3.connect(db_path) as conn:
         cursor = conn.cursor()
 
         found_tags = []
@@ -100,3 +113,19 @@ def get_list(limit):
         entries = [Entry(**row) for row in cursor.fetchall()]
 
         return entries
+
+
+def search_entry(entry_id, db_path="awesome-cli.db"):
+
+    with sqlite3.connect(db_path) as conn:
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+
+        row = cursor.execute(
+            "SELECT * FROM entry WHERE entry_id = ?", (entry_id,)
+        ).fetchone()
+
+        found_entry = Entry(**row)
+
+        print(f"Found Entry {found_entry}")
+        return found_entry

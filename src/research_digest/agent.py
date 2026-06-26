@@ -1,7 +1,7 @@
 from mistralai.client import Mistral
 import os
 from dotenv import load_dotenv
-from model import EntryCreate
+from src.research_digest.model import EntryCreate
 
 load_dotenv()
 
