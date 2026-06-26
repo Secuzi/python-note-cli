@@ -1,5 +1,5 @@
 import pytest
-from src.research_digest.db import add_entry, search_entry
+from src.research_digest.db import add_entry, search_entry, search_by_tag
 from src.research_digest.model import EntryCreate
 import sqlite3
 from datetime import datetime
@@ -113,3 +113,10 @@ def test_show_entry_with_no_entry(db_path):
             search_entry(entry_id="321", db_path=db_path)
 
         assert "321 does not exist" in str(error_info.value)
+
+
+def test_search_by_tag_with_no_tags(db_path):
+
+    entries = search_by_tag("claude", db_path)
+
+    assert entries == []
