@@ -2,8 +2,8 @@ import sqlite3
 import os
 import uuid
 from datetime import datetime, date
-from src.research_digest.model import Entry
-from src.research_digest.error_models.db_error import EntryErrorException
+from .model import Entry
+from .error_models.db_error import EntryErrorException
 
 
 def adapt_datetime_iso(val: datetime):
@@ -135,3 +135,12 @@ def search_entry(entry_id, db_path="awesome-cli.db"):
             )
 
         return found_entry
+
+
+def search_by_tag(tag_name, db_path="awesome-cli.db"):
+
+    with sqlite3.connect(db_path) as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM entry WHERE tag_name = ?", (tag_name,))
+
+    # TODO: Learn types of join and adapt

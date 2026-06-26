@@ -1,6 +1,6 @@
 import argparse
-from src.research_digest.agent import summarize
-from src.research_digest.db import init_db, add_entry, get_list
+from agent import summarize
+from db import init_db, add_entry, get_list, search_entry
 from pandas import DataFrame
 
 
@@ -20,7 +20,13 @@ def get_list_command(limit):
     print(df)
 
 
-def init_subparsers(parser):
+def search_entry_command(entry_id):
+    found_entry = search_entry(entry_id)
+
+    print(found_entry)
+
+
+def init_subparsers(parser: argparse.ArgumentParser):
     subparsers = parser.add_subparsers(dest="command")
 
     add_parser = subparsers.add_parser("add", help="Add notes for LLM to summarize")
@@ -29,6 +35,9 @@ def init_subparsers(parser):
 
     list_parser = subparsers.add_parser("list", help="List out all of the entries")
     list_parser.add_argument("--limit", type=int, default=10)
+
+    list_parser = subparsers.add_parser("show", help="Returns a valid entry")
+    list_parser.add_argument("entry_id", type=str)
 
 
 def main():
@@ -45,6 +54,8 @@ def main():
         case "list":
             print(f"Limit: {args.limit}")
             get_list_command(args.limit)
+        case "show":
+            search_entry_command(args.entry_id)
 
 
 main()

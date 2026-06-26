@@ -1,12 +1,8 @@
 import requests
 from dotenv import load_dotenv
 import os
-from test.tester import testerino
-from test.test2.teste import pastil
-
 # Load environment variables
 load_dotenv()
-testerino()
 # Test the setup
 print("✅ Packages imported successfully!")
 
