@@ -1,6 +1,6 @@
 import argparse
 from agent import summarize
-from db import init_db, add_entry, get_list, search_entry
+from db import init_db, add_entry, get_list, search_entry, search_by_tag
 from pandas import DataFrame
 
 
@@ -26,6 +26,10 @@ def search_entry_command(entry_id):
     print(found_entry)
 
 
+def search_by_tag_command(tag):
+    print(search_by_tag(tag))
+
+
 def init_subparsers(parser: argparse.ArgumentParser):
     subparsers = parser.add_subparsers(dest="command")
 
@@ -38,6 +42,11 @@ def init_subparsers(parser: argparse.ArgumentParser):
 
     list_parser = subparsers.add_parser("show", help="Returns a valid entry")
     list_parser.add_argument("entry_id", type=str)
+
+    list_parser = subparsers.add_parser("search")
+    list_parser.add_argument(
+        "--tag", type=str, help="Get list of entries filtered by tag"
+    )
 
 
 def main():
@@ -56,6 +65,10 @@ def main():
             get_list_command(args.limit)
         case "show":
             search_entry_command(args.entry_id)
+
+        case "search":
+            if args.tag:
+                search_by_tag_command(args.tag)
 
 
 main()

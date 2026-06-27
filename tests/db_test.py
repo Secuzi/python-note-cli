@@ -1,22 +1,9 @@
 import pytest
 from src.research_digest.db import add_entry, search_entry, search_by_tag
-from src.research_digest.model import EntryCreate
+from src.research_digest.model import EntryCreate, EntryWithTagName
 import sqlite3
 from datetime import datetime
 from src.research_digest.error_models.db_error import EntryErrorException
-
-
-def create_dummy_entry():
-    created_at = datetime.fromisoformat("2026-06-26 17:11:23")
-
-    entry = {
-        "entry_id": "123",
-        "summary": "Fixture allows you to setup configurations",
-        "action_item": "Create a small project with fixture",
-        "created_at": created_at,
-    }
-
-    return entry
 
 
 # Fixture Setup
@@ -55,6 +42,57 @@ def db_path(tmp_path):
     return path
 
 
+def create_dummy_entry(db_path):
+    with sqlite3.connect(db_path) as conn:
+        cursor = conn.cursor()
+        created_at = datetime.fromisoformat("2026-06-26 17:11:23")
+
+        entry = {
+            "entry_id": "123",
+            "summary": "Fixture allows you to setup configurations",
+            "action_item": "Create a small project with fixture",
+            "created_at": created_at,
+        }
+        entry_tuple = tuple(entry.values())
+
+        cursor.execute(
+            "INSERT INTO entry (entry_id, summary, action_item, created_at) VALUES (?, ?, ?, ?)",
+            entry_tuple,
+        )
+        return entry
+
+
+def create_dummy_tag(db_path):
+    with sqlite3.connect(db_path) as conn:
+        cursor = conn.cursor()
+        tag = {"tag_id": "tag-1", "name": "claude"}
+
+        cursor.execute(
+            "INSERT INTO tag (tag_id, name) VALUES (?, ?)", tuple(tag.values())
+        )
+
+        return tag
+
+
+def create_dummy_entry_tag(db_path):
+    with sqlite3.connect(db_path) as conn:
+        cursor = conn.cursor()
+
+        entry_tag = {"entry_id": "123", "tag_id": "tag-1"}
+
+        cursor.execute(
+            "INSERT INTO entry_tag (entry_id, tag_id) VALUES (?, ?)",
+            tuple(entry_tag.values()),
+        )
+        return entry_tag
+
+
+def data_init(db_path):
+    create_dummy_entry(db_path)
+    create_dummy_tag(db_path)
+    create_dummy_entry_tag(db_path)
+
+
 def test_add_entry_with_no_tags(db_path):
 
     entry = EntryCreate(
@@ -81,42 +119,29 @@ def test_add_entry_with_no_tags(db_path):
 
 
 def test_show_entry(db_path):
-    with sqlite3.connect(db_path) as conn:
-        cursor = conn.cursor()
-        entry = create_dummy_entry()
+    entry = create_dummy_entry(db_path)
 
-        entry_tuple = tuple(entry.values())
+    found_entry = search_entry("123", db_path).model_dump()
 
-        cursor.execute(
-            "INSERT INTO entry (entry_id, summary, action_item, created_at) VALUES (?, ?, ?, ?)",
-            entry_tuple,
-        )
-        conn.commit()
-
-        found_entry = search_entry("123", db_path).model_dump()
-
-        assert found_entry == entry
+    assert found_entry == entry
 
 
 def test_show_entry_with_no_entry(db_path):
-    entry = create_dummy_entry()
 
-    with sqlite3.connect(db_path) as conn:
-        cursor = conn.cursor()
-        entry_tuple = tuple(entry.values())
+    with pytest.raises(EntryErrorException) as error_info:
+        search_entry(entry_id="321", db_path=db_path)
 
-        cursor.execute(
-            "INSERT INTO entry (entry_id, summary, action_item, created_at) VALUES (?, ?, ?, ?)",
-            entry_tuple,
-        )
-        with pytest.raises(EntryErrorException) as error_info:
-            search_entry(entry_id="321", db_path=db_path)
-
-        assert "321 does not exist" in str(error_info.value)
+    assert "321 does not exist" in str(error_info.value)
 
 
 def test_search_by_tag_with_no_tags(db_path):
 
     entries = search_by_tag("claude", db_path)
-
     assert entries == []
+
+
+def test_search_by_tag(db_path):
+    data_init(db_path)
+    entries = search_by_tag("claude", db_path)
+    print(entries)
+    assert len(entries) > 0

@@ -2,8 +2,8 @@ import sqlite3
 import os
 import uuid
 from datetime import datetime, date
-from .model import Entry
-from .error_models.db_error import EntryErrorException
+from model import Entry, EntryWithTagName
+from error_models.db_error import EntryErrorException
 
 
 def adapt_datetime_iso(val: datetime):
@@ -128,7 +128,6 @@ def search_entry(entry_id, db_path="awesome-cli.db"):
             ).fetchone()
 
             found_entry = Entry(**row)
-            print(f"Row: {row}")
         except TypeError:
             raise EntryErrorException(
                 message=f"ID: {entry_id} does not exist", error_code="404"
@@ -140,7 +139,11 @@ def search_entry(entry_id, db_path="awesome-cli.db"):
 def search_by_tag(tag_name, db_path="awesome-cli.db"):
 
     with sqlite3.connect(db_path) as conn:
+        conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM entry WHERE tag_name = ?", (tag_name,))
-
-    # TODO: Learn types of join and adapt
+        rows = cursor.execute(
+            "SELECT e.entry_id, t.name as tag_name, e.summary, e.action_item, e.created_at FROM entry AS e JOIN entry_tag AS et ON e.entry_id = et.entry_id JOIN tag AS t ON t.tag_id = et.tag_id WHERE name = ?",
+            (tag_name,),
+        ).fetchall()
+        entries = [EntryWithTagName(**row) for row in rows]
+        return entries
