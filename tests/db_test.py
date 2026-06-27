@@ -120,6 +120,9 @@ def test_add_entry_with_no_tags(db_path):
 
 def test_show_entry(db_path):
     entry = create_dummy_entry(db_path)
+    create_dummy_tag(db_path)
+    create_dummy_entry_tag(db_path)
+    entry["tags"] = ["claude"]
 
     found_entry = search_entry("123", db_path).model_dump()
 

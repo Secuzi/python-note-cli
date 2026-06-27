@@ -4,6 +4,7 @@ from datetime import datetime
 
 class Entry(BaseModel):
     entry_id: str
+    tags: list[str]
     summary: str
     action_item: str
     created_at: datetime

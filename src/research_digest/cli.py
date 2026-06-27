@@ -15,7 +15,7 @@ def get_list_command(limit):
 
     df = DataFrame([entry.model_dump() for entry in entries])
 
-    df = df[["entry_id", "summary", "created_at"]]
+    df = df[["entry_id", "tags", "created_at"]]
 
     print(df)
 

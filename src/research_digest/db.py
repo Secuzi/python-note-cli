@@ -2,8 +2,9 @@ import sqlite3
 import os
 import uuid
 from datetime import datetime, date
-from model import Entry, EntryWithTagName
-from error_models.db_error import EntryErrorException
+from .model import Entry, EntryWithTagName
+from .error_models.db_error import EntryErrorException
+import json
 
 
 def adapt_datetime_iso(val: datetime):
@@ -111,8 +112,16 @@ def get_list(limit):
 
         cursor.execute("SELECT * FROM ENTRY LIMIT ?", (limit,))
 
-        entries = [Entry(**row) for row in cursor.fetchall()]
+        cursor.execute(
+            "SELECT json_object('entry_id', CAST(e.entry_id as TEXT), 'tags', json_group_array(t.name), 'summary', CAST(e.summary AS TEXT), 'action_item', CAST(e.action_item AS TEXT), 'created_at', CAST(e.created_at AS TEXT) ) FROM entry AS e JOIN entry_tag AS et ON e.entry_id = et.entry_id JOIN tag AS t ON t.tag_id = et.tag_id GROUP BY e.entry_id LIMIT ?",
+            (limit,),
+        )
+        # rows = cursor.fetchall()
 
+        # for row in rows:
+        # print(row[0])
+        entries = [Entry(**(json.loads(row[0]))) for row in cursor.fetchall()]
+        print(entries)
         return entries
 
 
@@ -122,16 +131,19 @@ def search_entry(entry_id, db_path="awesome-cli.db"):
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
 
-        try:
-            row = cursor.execute(
-                "SELECT * FROM entry WHERE entry_id = ?", (entry_id,)
-            ).fetchone()
-
-            found_entry = Entry(**row)
-        except TypeError:
+        # row = cursor.execute(
+        #     "SELECT * FROM entry WHERE entry_id = ?", (entry_id,)
+        # ).fetchone()
+        row = cursor.execute(
+            "SELECT json_object('entry_id', CAST(e.entry_id as TEXT), 'tags', json_group_array(t.name), 'summary', CAST(e.summary AS TEXT), 'action_item', CAST(e.action_item AS TEXT), 'created_at', CAST(e.created_at AS TEXT) ) FROM entry AS e JOIN entry_tag AS et ON e.entry_id = et.entry_id JOIN tag AS t ON t.tag_id = et.tag_id WHERE e.entry_id = ? GROUP BY e.entry_id",
+            (entry_id,),
+        ).fetchone()
+        if row is None:
             raise EntryErrorException(
                 message=f"ID: {entry_id} does not exist", error_code="404"
             )
+        entry = json.loads(row[0])
+        found_entry = Entry(**entry)
 
         return found_entry
 
