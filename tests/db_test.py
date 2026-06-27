@@ -1,6 +1,11 @@
 import pytest
-from src.research_digest.db import add_entry, search_entry, search_by_tag
-from src.research_digest.model import EntryCreate, EntryWithTagName
+from src.research_digest.db import (
+    add_entry,
+    search_entry,
+    search_by_tag,
+    search_by_summary,
+)
+from src.research_digest.model import EntryCreate, Entry
 import sqlite3
 from datetime import datetime
 from src.research_digest.error_models.db_error import EntryErrorException
@@ -148,3 +153,11 @@ def test_search_by_tag(db_path):
     entries = search_by_tag("claude", db_path)
     print(entries)
     assert len(entries) > 0
+
+
+def test_search_by_summary(db_path):
+    data_init(db_path)
+    entries = search_by_summary("fixture", db_path)
+
+    assert len(entries) > 0
+    assert entries[0].entry_id == "123"

@@ -2,7 +2,7 @@ import sqlite3
 import os
 import uuid
 from datetime import datetime, date
-from .model import Entry, EntryWithTagName
+from .model import Entry
 from .error_models.db_error import EntryErrorException
 import json
 
@@ -154,8 +154,21 @@ def search_by_tag(tag_name, db_path="awesome-cli.db"):
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
         rows = cursor.execute(
-            "SELECT e.entry_id, t.name as tag_name, e.summary, e.action_item, e.created_at FROM entry AS e JOIN entry_tag AS et ON e.entry_id = et.entry_id JOIN tag AS t ON t.tag_id = et.tag_id WHERE name = ?",
+            "SELECT json_object('entry_id', CAST(e.entry_id as TEXT), 'tags', json_group_array(t.name), 'summary', CAST(e.summary AS TEXT), 'action_item', CAST(e.action_item AS TEXT), 'created_at', CAST(e.created_at AS TEXT) ) FROM entry AS e JOIN entry_tag AS et ON e.entry_id = et.entry_id JOIN tag AS t ON t.tag_id = et.tag_id WHERE t.name = ? GROUP BY e.entry_id",
             (tag_name,),
         ).fetchall()
-        entries = [EntryWithTagName(**row) for row in rows]
+        entries = [Entry(**(json.loads(row[0]))) for row in rows]
+        return entries
+
+
+def search_by_summary(text, db_path="awesome-cli.db"):
+    with sqlite3.connect(db_path) as conn:
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        rows = cursor.execute(
+            "SELECT json_object('entry_id', CAST(e.entry_id as TEXT), 'tags', json_group_array(t.name), 'summary', CAST(e.summary AS TEXT), 'action_item', CAST(e.action_item AS TEXT), 'created_at', CAST(e.created_at AS TEXT) ) FROM entry AS e JOIN entry_tag AS et ON e.entry_id = et.entry_id JOIN tag AS t ON t.tag_id = et.tag_id WHERE e.summary LIKE ? GROUP BY e.entry_id",
+            (f"%{text}%",),
+        ).fetchall()
+
+        entries = [Entry(**(json.loads(row[0]))) for row in rows]
         return entries
